@@ -7,7 +7,7 @@
 #       normalized to the range 0-1
 
 import random           # FOR RANDOM BEGINNINGS
-from Tkinter import *   # ALL VISUAL EQUIPMENT
+#from Tkinter import *   # ALL VISUAL EQUIPMENT
 import socket, OSC      # OSC COMMUNICATION
 import time, threading
 import math
@@ -15,7 +15,7 @@ import math
 DIMLIMIT = 700          # LIMIT OF DIMENSION VALUES
 WIDTH = DIMLIMIT        # OF SCREEN IN PIXELS
 HEIGHT = DIMLIMIT       # OF SCREEN IN PIXELS
-BOIDS = 1 + 6 + 12      # IN SIMULATION
+BOIDS = 19              # IN SIMULATION
 BOIDMASS = 2            # IN SIMULATION
 BLIMIT = 30             # LIMIT FOR BOID PERCEPTION
 ATTRACTORS = 9          # IN SIMULATION
@@ -28,7 +28,6 @@ ATTRACTOR_RADIUS = 5    # FOR BOIDS IN PIXELS
 OFFSET_START = 20       # FROM WALL IN PIXELS
 FRAMES_PER_SEC = 40     # SCREEN UPDATE RATE
 UPDATE_TIME = 500 / FRAMES_PER_SEC
-WINDOWED = True         # MOVABLE PROGRAM
 NDIMS = 6               # MULTIDIMENSIONAL SWARM SPACE
 
 # FOR OSC
@@ -54,9 +53,27 @@ IOISCALER = float(MAXIOI - MINIOI) / float(DIMLIMIT)
 scClient = OSC.OSCClient()
 scClient.connect( SUPERCOLLIDER_ADDRESS ) # note that the argument is a tupple and not two arguments
 
-#pClient = OSC.OSCClient()
-#pClient.connect( PROCESSING_ADDRESS )
+pClient = OSC.OSCClient()
+pClient.connect( PROCESSING_ADDRESS )
 
+
+
+
+import threading
+
+class Timer(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.event = threading.Event()
+
+    def run(self):
+        while not self.event.is_set():
+            move();
+            makesound();
+            self.event.wait(float(UPDATE_TIME) / 1000)
+
+    def stop(self):
+        self.event.set()
 
 
 ################################################################################
@@ -64,8 +81,11 @@ scClient.connect( SUPERCOLLIDER_ADDRESS ) # note that the argument is a tupple a
 def main():
     # Start the program.
     initialise()
-    mainloop()
-
+    #mainloop()
+    
+    tmr = Timer()
+    tmr.start()
+ 
 def initialise():
     # Setup simulation variables.
     global sim_time  # discreet simulation time variable
@@ -74,29 +94,13 @@ def initialise():
     note_time = 0    # start at zero - see makesound()
     build_boids()
     build_attractors()
-    build_graph()
+    #build_graph()
     startOSC()
 
-def build_graph():
-    # Build GUI environment.
-    global graph
-    root = Tk()
-    if WINDOWED:
-        root.resizable(False, False)
-        root.title('Swarm')
-    else:
-        root.overrideredirect(True)
-    x = (root.winfo_screenwidth() - WIDTH) / 2
-    y = (root.winfo_screenheight() - HEIGHT) / 2
-    root.geometry('%dx%d+%d+%d' % (WIDTH, HEIGHT, x, y))
-    root.protocol("WM_DELETE_WINDOW", quit_handler)
-    graph = Canvas(root, width=WIDTH, height=HEIGHT, background='black')
-    graph.after(1000 / FRAMES_PER_SEC, update)
-    graph.pack()
-
+'''
 def update():
     # Main simulation loop.
-    graph.after(UPDATE_TIME, update)
+    #graph.after(UPDATE_TIME, update)
     draw()
     move()
     makesound()
@@ -110,22 +114,23 @@ def update():
 def draw():
     # Draw boids and attractors.
     # Shows only first 2 dimensions
-    graph.delete(ALL)
+    #graph.delete(ALL)
     for boid in boids:
         x1 = boid.position.x[0] - BOID_RADIUS
         y1 = boid.position.x[1] - BOID_RADIUS
         x2 = boid.position.x[0] + BOID_RADIUS
         y2 = boid.position.x[1] + BOID_RADIUS
-        graph.create_oval((x1, y1, x2, y2), fill='white')
-        #sendMsg('/boid', 1, pClient)
+        #graph.create_oval((x1, y1, x2, y2), fill='white')
+        sendMsg('/boid', 1, pClient)
     for attractor in attractors:
         x1 = attractor.position.x[0] - ATTRACTOR_RADIUS
         y1 = attractor.position.x[1] - ATTRACTOR_RADIUS
         x2 = attractor.position.x[0] + ATTRACTOR_RADIUS
         y2 = attractor.position.x[1] + ATTRACTOR_RADIUS
-        graph.create_oval((x1, y1, x2, y2), fill='red')
-        #sendMsg('/boid', 2, pClient)
-    graph.update()
+        #graph.create_oval((x1, y1, x2, y2), fill='red')
+        sendMsg('/boid', 2, pClient)
+    #graph.update()
+'''
 
 def move():
     # Move all boids.
@@ -137,6 +142,9 @@ def move():
 def makesound():
     global note_time
     global sim_time
+
+    sim_time += 1 # iterate discreet time variable
+
     if not note_time:
         note_time = random.randint(10,100) #time of first note, in sim_time units
     ioi = 0 #note ioi is the last dimension
@@ -152,6 +160,19 @@ def makesound():
         sendMsg('/swarmNote',dimvals,scClient)                     # send centroid values via osc
         ioi = dimvals[NDIMS-1] * float(MAXIOI - MINIOI) + float(MINIOI) #ioi is last dim
         note_time = sim_time + ioi                        # assign next note time
+
+    for i in range(0, len(boids)):
+        boid = boids[i]
+        x = boid.position.x[0] - BOID_RADIUS
+        y = boid.position.x[1] - BOID_RADIUS
+        sendMsg('/boid', [i, float(x)/WIDTH, float(y)/HEIGHT], pClient)
+
+    for i in range(0, len(attractors)):
+        attractor = attractors[i]
+        x = attractor.position.x[0] - ATTRACTOR_RADIUS
+        y = attractor.position.x[1] - ATTRACTOR_RADIUS
+        sendMsg('/attractor', [i, float(x)/WIDTH, float(y)/HEIGHT], pClient)
+
 
 def simulate_wall(boid):
     # Create boundaries.
@@ -323,7 +344,7 @@ def quit_handler(): # close OSC server
   print "Waiting for Server-thread to finish."
   st.join() ##!!!
   print "Done."
-  graph.quit()
+  #graph.quit()
 
 ################################################################################
 # SENDING OSC
@@ -332,7 +353,7 @@ def sendMsg(addr, val, client):
     msg = OSC.OSCMessage() #  we reuse the same variable msg used above overwriting it
     msg.setAddress(addr)   # something like "/note"
     msg.append(val)        # the corresponding value
-    #print val
+    print val
     client.send(msg)       # now we dont need to tell the client the address anymore
 
 ################################################################################
