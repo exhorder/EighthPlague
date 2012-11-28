@@ -33,7 +33,8 @@ NDIMS = 6               # MULTIDIMENSIONAL SWARM SPACE
 
 # FOR OSC
 RECEIVE_ADDRESS = ('127.0.0.1', 9000) # tupple with ip, port.
-SEND_ADDRESS = ('127.0.0.1', 57120) # SuperCollider on local machine.
+SUPERCOLLIDER_ADDRESS = ('127.0.0.1', 57120) # SuperCollider on local machine.
+PROCESSING_ADDRESS = ('127.0.0.1', 57121) # Processing on local machine.
 
 # FOR CREATING/SENDING NOTE EVENTS
 MAXFREQ = 90 #MIDI FREQ
@@ -47,6 +48,16 @@ FREQSCALER = float(MAXFREQ - MINFREQ) / float(DIMLIMIT)
 AMPSCALER = float(MAXAMP) / float(DIMLIMIT)
 DURSCALER = float(MAXDUR - MINDUR) / float(DIMLIMIT)
 IOISCALER = float(MAXIOI - MINIOI) / float(DIMLIMIT)
+
+# OSC clients
+# SuperCollider
+scClient = OSC.OSCClient()
+scClient.connect( SUPERCOLLIDER_ADDRESS ) # note that the argument is a tupple and not two arguments
+
+#pClient = OSC.OSCClient()
+#pClient.connect( PROCESSING_ADDRESS )
+
+
 
 ################################################################################
 
@@ -106,12 +117,14 @@ def draw():
         x2 = boid.position.x[0] + BOID_RADIUS
         y2 = boid.position.x[1] + BOID_RADIUS
         graph.create_oval((x1, y1, x2, y2), fill='white')
+        #sendMsg('/boid', 1, pClient)
     for attractor in attractors:
         x1 = attractor.position.x[0] - ATTRACTOR_RADIUS
         y1 = attractor.position.x[1] - ATTRACTOR_RADIUS
         x2 = attractor.position.x[0] + ATTRACTOR_RADIUS
         y2 = attractor.position.x[1] + ATTRACTOR_RADIUS
         graph.create_oval((x1, y1, x2, y2), fill='red')
+        #sendMsg('/boid', 2, pClient)
     graph.update()
 
 def move():
@@ -136,7 +149,7 @@ def makesound():
                 dimvals[i] += boid.position.x[i]
             dimvals[i] /= float( len(boids) * DIMLIMIT )  # normalize to range 0-1
             dimvals[i] = max(min(dimvals[i],1.0),0.0)     # make sure it's in range
-        sendMsg('/swarmNote',dimvals)                     # send centroid values via osc
+        sendMsg('/swarmNote',dimvals,scClient)                     # send centroid values via osc
         ioi = dimvals[NDIMS-1] * float(MAXIOI - MINIOI) + float(MINIOI) #ioi is last dim
         note_time = sim_time + ioi                        # assign next note time
 
@@ -315,13 +328,11 @@ def quit_handler(): # close OSC server
 ################################################################################
 # SENDING OSC
 
-client = OSC.OSCClient()
-client.connect( SEND_ADDRESS ) # note that the argument is a tupple and not two arguments
-
-def sendMsg(addr,val):
+def sendMsg(addr, val, client):
     msg = OSC.OSCMessage() #  we reuse the same variable msg used above overwriting it
     msg.setAddress(addr)   # something like "/note"
     msg.append(val)        # the corresponding value
+    #print val
     client.send(msg)       # now we dont need to tell the client the address anymore
 
 ################################################################################
