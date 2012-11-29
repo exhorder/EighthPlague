@@ -4,44 +4,23 @@
 // @note Adapted from Nick Collins' Machine Listening Chapter in the SuperCollider book.
 // @note See also «envio» synth by vividsnow, http://sccode.org/1-4Qw
 
+//------------------------------------------------------
+// For debugging
+//------------------------------------------------------
+s.meter;
+OSCFunc.trace(true); // Turn posting on
+OSCFunc.trace(false); // Turn posting off
+SwingOSC.quitAll
+
 
 //------------------------------------------------------
-// 1. Set up machine listening on server ---------------
-(
-s.waitForBoot({
-
-b = Buffer.alloc(s, 512); //buffer for FFT
-
-//this SynthDef makes no sound, just analyzes input
-SynthDef(\pitchandonsets,
-{
-	var in, amp, freq, hasFreq, chain, onsets, trigger, trigval;
-	in = SoundIn.ar(0);
-	amp = Amplitude.kr(in);
-	# freq, hasFreq = Pitch.kr(in, maxFreq: 1000); 
-		
-	chain = FFT(b, in);
-	
-	// move the mouse left/right to change the threshold:
-	onsets = Onsets.kr(chain, MouseX.kr(0,1), \complex);
-	
-  // send amplitude and freq
-	trigval = [ RunningSum.kr(amp,512)*(s.options.blockSize/512),
-	            freq,
-	            hasFreq ];
-
-	trigger = SendReply.kr(onsets,'/newNote',trigval);
-
-//  SendReply.kr((hasFreq == 0)&&(2.rand),'/playNotes',\go);
-
-}).add;
-});
-)
-
-//------------------------------------------------------
-// 2. Start to receive notes from python swarm
+// Receive notes from python swarm and make sound
 //------------------------------------------------------
 (
+~drums=true;
+~fm=false;
+~envio=false;
+
 ~scale = Scale.chromatic;
 ~minFreq = 10;  // in midi notes
 ~maxFreq = 120; // in midi notes
@@ -67,110 +46,99 @@ a = OSCdef(\incomingNotePrint,
       ~pan = ((~rangePan * msg[4]) + ~minPan);
       ~degree = (~freq % 12) + (7 * ((~freq / 12).round - 6) );
 
-      //FM
-      Pbind(
-        \instrument,  \simpFM,
-        \freq,        Pseq([~freq.midicps],1),
-        \amp,         ~amp,
-        \dur,         ~dur,
-        \pan,         ~pan
-      ).play;
+      if (~fm,
+          {Pbind(
+            \instrument,  \simpFM,
+            \freq,        Pseq([~freq.midicps],1),
+            \amp,         ~amp,
+            \dur,         ~dur,
+            \pan,         ~pan
+          ).play;}
+      );
 
-      Pbind(
-        \instrument,  \envio,
-        //\freq,        Pseq([~freq.midicps],1),
-        \degree,      Pseq([~degree],1),
-        \scale,       Pfunc({ ~scale }, inf),
-        \amp,         ~amp,
-        \dur,         ~dur,
-        \pan,         ~pan
-      ).play;
+      if (~envio,
+          {Pbind(
+            \instrument,  \envio,
+            //\freq,        Pseq([~freq.midicps],1),
+            \degree,      Pseq([~degree],1),
+            \scale,       Pfunc({ ~scale }, inf),
+            \amp,         ~amp,
+            \dur,         ~dur,
+            \pan,         ~pan
+          ).play;}
+      );
 
 
-      //drums
-      Pbind(
-        \instrument,  \natalQuinto,
-        //\freq,       Pseq([msg[1].midicps.round],1),
-        #[\bufnum, \sampdur],
-                      Prand(Array.fill(~paths.size, { arg i; [b[i],b[i].duration] } ), 2.rand),
-        \amp,         ~amp*4,
-        \dur,         Prand([0.1,0.2,0.5,1], inf),
-        \pan,         ([-1,-0.5,0,0.5,1] * ~pan).min(1).max(-1).choose //random panning
-      ).play;
-      
+      if (~drums,
+          {Pbind(
+            \instrument,  \natalQuinto,
+            //\freq,       Pseq([msg[1].midicps.round],1),
+            #[\bufnum, \sampdur],
+                          Prand(Array.fill(~paths.size, { arg i; [b[i],b[i].duration] } ), 2.rand),
+            \amp,         ~amp*4,
+            \dur,         Prand([0.1,0.2,0.5,1], inf),
+            \pan,         ([-1,-0.5,0,0.5,1] * ~pan).min(1).max(-1).choose //random panning
+          ).play;}
+      );
+
+
       },
       '/swarmNote',nil);
 )
-a.free
-
-//------------------------------------------------------
-// For debugging
-//------------------------------------------------------
-s.meter;
-OSCFunc.trace(true); // Turn posting on
-OSCFunc.trace(false); // Turn posting off
-SwingOSC.quitAll
-
-
 
 //---------------------------------------------------------
-// register to receive messages from jar
+// Receive messages from jar and send to swarm
 //---------------------------------------------------------
-// port 7000
 // /piezo float
 // /accel float float float
-// jerk
-( 
-~jarlist = (
-  \piezo: List(),
-  \accx: List(),
-  \accy: List(),
-  \accz: List(),
-  \jerk: List()
-);
-~numvals = 200;     //will hold the last 2 seconds at 10ms/msg 
-var started=false; 
-~piezo = OSCdef(\newPiezoMsg,
-      {|msg, time, addr, recvPort|		
-	      if(started,{	
-          ~jarlist[\piezo].addFirst(msg[1]);
-        	//remove oldest val if over size ~numvals
-        	if(~jarlist[\piezo].size>~numvals,
-        	    { ~jarlist[\piezo].pop; }
-        	); 
-	
-      	},{started = true;}); 
-      },
-      '/piezo', nil);
-~acc = OSCdef(\newAccMsg,
-      {|msg, time, addr, recvPort|		
-	      if(started,{	
-          ~jarlist[\accx].addFirst(msg[1]);
-          ~jarlist[\accy].addFirst(msg[2]);
-          ~jarlist[\accz].addFirst(msg[3]);
-        	//remove oldest val if over size ~numvals
-        	if(~jarlist[\accx].size>~numvals,
-        	    { ~jarlist[\accx].pop;
-          	    ~jarlist[\accy].pop;
-          	    ~jarlist[\accz].pop; }
-        	); 
-      	},{started = true;}); 
+// /jerk 1
+(
+OSCdef(\newAccelMsg,
+      {|msg, time, addr, recvPort|
+//       \Accel_Msg.postln;
+//       time.postln;
+//       msg.postln;
+      m = NetAddr("127.0.0.1", 9000); // python
+      //set attractor position
+      m.sendMsg("/attr_dim",
+            0, //freq dimension
+            (msg[1]).max(0).min(1)
+      );
+      m.sendMsg("/attr_dim",
+            1, //amp dimension
+            (msg[2]).max(0).min(1)
+      );
+      m.sendMsg("/attr_dim",
+            2, //dur dimension
+            (msg[3]).max(0).min(1)
+      );
+       
       },
       '/accel', nil);
-~jerk = OSCdef(\newJerkMsg,
-      {|msg, time, addr, recvPort|		
-      	m = NetAddr("127.0.0.1", 9000); // python
-      	//set attractor position
-        m.sendMsg("/attr",
-              //freq,
-              (~jarlist[\piezo]).max(0).min(1), //amp
-              (~jarlist[\accx]).max(0).min(1), //dur
-              (~jarlist[\accx]).max(0).min(1), //mod freq
-              (~jarlist[\accy]).max(0).min(1), //dur
-              (~jarlist[\accz]).max(0).min(1), //ioi
-        );
+
+//TODO
+OSCdef(\newJerkMsg,
+      {|msg, time, addr, recvPort|
+       \Jerk_Msg.postln;
+       time.postln;
+       msg.postln;
       },
-      'jerk', nil);
+      '/jerk', nil);
+
+//TODO
+OSCdef(\newPiezoMsg,
+      {|msg, time, addr, recvPort|
+       \Piezo_Msg.postln;
+       time.postln;
+       msg.postln;
+      },
+      '/piezo', nil);
+)
+
+
+
+
+
 )
 //---------------------------------------------------------
 // register to receive note message from scsynth server

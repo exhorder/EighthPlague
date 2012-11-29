@@ -18,8 +18,8 @@ HEIGHT = DIMLIMIT       # OF SCREEN IN PIXELS
 BOIDS = 19              # IN SIMULATION
 BOIDMASS = 2            # IN SIMULATION
 BLIMIT = 30             # LIMIT FOR BOID PERCEPTION
-ATTRACTORS = 9          # IN SIMULATION
-ATTRACTION = 3          # ATTRACTOR INFLUENCE
+ATTRACTORS = 1          # IN SIMULATION
+ATTRACTION = 6          # ATTRACTOR INFLUENCE
 WALL = 100              # FROM SIDE IN PIXELS
 WALL_FORCE = 30         # ACCELERATION PER MOVE
 SPEED_LIMIT = 1000      # FOR BOID VELOCITY
@@ -332,6 +332,24 @@ def attractor_handler(addr, tags, stuff, source):
     print "---"
 s.addMsgHandler("/attr", attractor_handler) # adding our function
 
+#set only one dimension value for an attractor
+# send this msg: /attr_dim num val
+#                where num is the dimension value and val is between 0 and 1
+def attr_dim_handler(addr, tags, stuff, source):
+    print "---"
+    print "Received new osc msg from %s" % OSC.getUrlStr(source)
+    print "With addr : %s" % addr
+    print "Typetags %s" % tags
+    global attractors
+    attractor = random.choice(attractors) #modify a random attractor
+    for item in stuff:
+        print "data %f" % item
+    # Assign dimension value
+    attractor.position.x[stuff[0]] = int( min(max(stuff[1],0.0),1.0) * DIMLIMIT )
+    print "Dim %d val: %d" % (stuff[0],attractor.position.x[stuff[1]])
+    print "---"
+s.addMsgHandler("/attr_dim", attr_dim_handler) # adding our function
+
 def startOSC(): # Start OSCServer
   print "\nStarting OSCServer.\n"
   global st
@@ -354,7 +372,7 @@ def sendMsg(addr, val, client):
     msg.setAddress(addr)   # something like "/note"
     msg.append(val)        # the corresponding value
     #print val
-    client.send(msg)       # now we dont need to tell the client the address anymore
+    scClient.send(msg)       # now we dont need to tell the client the address anymore
 
 ################################################################################
 
