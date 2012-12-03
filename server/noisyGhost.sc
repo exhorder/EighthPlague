@@ -42,10 +42,48 @@ SynthDef(\natalQuintoAz, { arg out = 0, bufnum, sampdur, amp=1, pos=0;
     );
 }).add;
 
+SynthDef(\bubbles, {
+    | out=0, maxdelay=0.02, mindelay=0.02, decay=4, gate=1.0, freq=4, amp=1.0, pos=0.0, dur |
+    var sig, env, atk, dec, sus, rel;
+    atk = dur*0.01;
+    dec = dur*0.5;
+    sus = dur*0.02;
+    rel = dur*0.47;
+    sig = CombN.ar(
+          SinOsc.ar(
+            LFNoise1.kr(freq, 24, LFSaw.kr([8,7.23], 0, 3, 80) ).midicps,
+            0,
+            0.04),
+          maxdelay, // max delay
+          mindelay, // actual delay
+          decay);
+    env = Env([0, 1, 0.6, 0.4, 0]*amp, [atk, dec, sus, rel], curve: \squared);
+    Out.ar(out,PanAz.ar(4,sig * EnvGen.kr(env, doneAction: 2), pos));
+}).add;
+
+SynthDef(\spaceDrone,{
+  | out=0, amp=0.1, freq=200, pos=0.0, dur |
+  var freqs, amps, phases;
+  var env, atk, dec, sus, rel;
+  atk = dur*0.01;
+  dec = dur*0.5;
+  sus = dur*0.02;
+  rel = dur*0.47;
+  freqs = freq * Array.rand(5, 0.25, 3.0);
+  amps = Array.rand(5, 0.0, 1.0);
+  phases = Array.rand(5, 0.0, 2*pi);
+  env = Env([0, 1, 0.6, 0.4, 0]*amp, [atk, dec, sus, rel], curve: \squared);
+  Out.ar(out, PanAz.ar(4, EnvGen.kr(env, doneAction: 2) * Klang.ar(`[ freqs, amps, phases ],1,0), pos));
+}).add;
+
+
 //------------------------------------------------------
 // Receive notes from python swarm and make sound
+
 ~drums=true; // whether to use drums
 ~fm=true;    // whether to use FM synth
+~bubbles=true;
+~spacedrone=true;
 
 ~scale = Scale.major;
 
@@ -89,6 +127,26 @@ a = OSCdef(\incomingNotePrint,
             \pos,         ~pan
           ).play;}
       );
+      
+      if (~bubbles,
+          {Pbind(
+            \instrument,  \bubbles,
+            \freq,        Pseq([~freq.midicps/50],1),
+            \amp,         ~amp,
+            \dur,         ~dur,
+            \pos,         ~pan
+          ).play;}
+      );
+
+      if (~spacedrone,
+          {Pbind(
+            \instrument,  \spaceDrone,
+            \freq,        Pseq([~freq.midicps],1),
+            \amp,         ~amp,
+            \dur,         ~dur,
+            \pos,         (~pan + 1.5) % 2.0
+          ).play;}
+      );
 
       if (~drums,
           {Pbind(
@@ -105,6 +163,7 @@ a = OSCdef(\incomingNotePrint,
 
       },
       '/swarmNote',nil);
+
 
 //---------------------------------------------------------
 // Receive messages from jar and send to swarm
@@ -157,6 +216,26 @@ OSCdef(\newJerkMsg,
        m = NetAddr("127.0.0.1", 9000); // python
        //set attractor position
        m.sendMsg("/resetboids");
+       {
+        1.do({
+          play({
+            var sig, chain;
+            sig = sum({ SinOsc.ar(rrand(50,6000),0,
+                        2*Decay.ar(Dust2.ar(5),0.1)).tanh } ! 7);
+            chain = sig;    // Start with the original signal
+            8.do {|i|
+                // A simple reverb
+                chain = LeakDC.ar(
+                  AllpassL.ar(LPF.ar(chain*0.9,3000),
+                  0.2, {0.19.rand+0.01}!2, 3)
+                  );
+            };
+            
+            PanAz.ar(4,Limiter.ar(sig+chain)*EnvGen.kr(Env.sine(4,0.1.rand), doneAction: 2),2.0.rand);
+          });
+            2.wait;
+        });
+        }.fork;
       },
       '/jerk', nil);
 
