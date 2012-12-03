@@ -22,6 +22,7 @@ ATTRACTORS = 1          # IN SIMULATION
 ATTRACTION = 6          # ATTRACTOR INFLUENCE
 WALL = 100              # FROM SIDE IN PIXELS
 WALL_FORCE = 30         # ACCELERATION PER MOVE
+UPPER_SPEED_LIMIT = 6000      # FOR BOID VELOCITY
 SPEED_LIMIT = 1000      # FOR BOID VELOCITY
 BOID_RADIUS = 3         # FOR BOIDS IN PIXELS
 ATTRACTOR_RADIUS = 5    # FOR BOIDS IN PIXELS
@@ -350,6 +351,33 @@ def attr_dim_handler(addr, tags, stuff, source):
     print "---"
 s.addMsgHandler("/attr_dim", attr_dim_handler) # adding our function
 
+# reset boid positions to random values
+def reset_boids_handler(addr, tags, stuff, source):
+    print "---"
+    print "Received new osc msg from %s" % OSC.getUrlStr(source)
+    print "With addr : %s" % addr
+    print "Typetags %s" % tags
+    global boids
+    for boid in boids:
+        for dim in range(NDIMS):
+            boid.position.x[dim] = random.randint(1, DIMLIMIT)
+    print "---"
+s.addMsgHandler("/resetboids", reset_boids_handler)
+
+
+#change speed limit
+def speed_lim_handler(addr, tags, stuff, source):
+    print "---"
+    print "Received new osc msg from %s" % OSC.getUrlStr(source)
+    print "With addr : %s" % addr
+    print "Typetags %s" % tags
+    global SPEED_LIMIT
+    global UPPER_SPEED_LIMIT
+    SPEED_LIMIT = stuff[0] * UPPER_SPEED_LIMIT    
+    print "Speed Limit: %f" % (SPEED_LIMIT)
+    print "---"
+s.addMsgHandler("/speed", speed_lim_handler) # adding our function
+
 def startOSC(): # Start OSCServer
   print "\nStarting OSCServer.\n"
   global st
@@ -371,7 +399,10 @@ def sendMsg(addr, val, client):
     msg = OSC.OSCMessage() #  we reuse the same variable msg used above overwriting it
     msg.setAddress(addr)   # something like "/note"
     msg.append(val)        # the corresponding value
-    #print val
+#    if client is scClient:
+#        print client
+#        print addr
+#        print val
     client.send(msg)       # now we dont need to tell the client the address anymore
 
 ################################################################################
