@@ -17,15 +17,16 @@ int oscPort = 57121;
 //float[][] boids = new float[16][2]; // doubly hard-coded in GridRenderer
 //float[][] attractors = new float[9][2];
 
-OscP5 oscP5;
+OscP5 oscP5;// = new OscP5(this, oscPort);
 Minim minim;
 AudioSource source;
 GridRenderer gridRenderer;
 int select;
  
+/*
 boolean sketchFullScreen() {
   return !DEBUG;
-}
+}*/
 
 void setup()
 {
@@ -79,7 +80,7 @@ void oscEvent(OscMessage msg)
   //
   else if (pattern.equals("/boid")) {
     int i = int(msg.get(0).intValue());
-    //print("\n" + i + "\n");
+    print("\n" + i + "\n");
     gridRenderer.boids[i][0] = msg.get(1).floatValue();
     gridRenderer.boids[i][1] = msg.get(2).floatValue();
     //gridRenderer.boids = boids;

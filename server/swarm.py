@@ -372,7 +372,7 @@ def sendMsg(addr, val, client):
     msg.setAddress(addr)   # something like "/note"
     msg.append(val)        # the corresponding value
     #print val
-    scClient.send(msg)       # now we dont need to tell the client the address anymore
+    client.send(msg)       # now we dont need to tell the client the address anymore
 
 ################################################################################
 
