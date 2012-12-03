@@ -132,6 +132,18 @@ OSCdef(\newAccelMsg,
             2.asInt, //dur dimension
             (msg[3]).max(0).min(1)
       );
+      m.sendMsg("/attr_dim",
+            3.asInt, //pan dimension
+            (msg[3]).max(0).min(1)
+      );
+      m.sendMsg("/attr_dim",
+            4.asInt, //modfreq dimension
+            (msg[2]).max(0).min(1)
+      );
+      m.sendMsg("/attr_dim",
+            5.asInt, //ioi dimension
+            (msg[3]*0.8).max(0).min(1)
+      );
        
       },
       '/accel', nil);
