@@ -23,9 +23,10 @@ AudioSource source;
 GridRenderer gridRenderer;
 int select;
  
+/*
 boolean sketchFullScreen() {
   return !DEBUG;
-}
+}*/
 
 void setup()
 {
