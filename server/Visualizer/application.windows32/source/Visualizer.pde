@@ -4,12 +4,13 @@
 //  Music 250A, CCRMA, Stanford University
 //
 
+//import processing.core.PGraphics3D;
+//import processing.core.*;
+//import processing.opengl.*;
+
 import oscP5.*;
 import netP5.*;
 import ddf.minim.*;
-
-// debug mode
-boolean DEBUG = true;
 
 int oscPort = 57121;
 
@@ -18,23 +19,18 @@ int oscPort = 57121;
 //float[][] attractors = new float[9][2];
 
 OscP5 oscP5;// = new OscP5(this, oscPort);
-Minim minim;
+Minim minim = new Minim(this);
 AudioSource source;
 GridRenderer gridRenderer;
 int select;
  
-/*
-boolean sketchFullScreen() {
-  return !DEBUG;
-}*/
-
 void setup()
 {
   oscP5 = new OscP5(this, oscPort);
 
-  size(displayWidth, DEBUG ? 1080 : displayHeight, P3D);
+  size(1024, 708);
     
-  minim = new Minim(this);
+  //minim = new Minim(this);
   source = minim.getLineIn(); 
   
   gridRenderer = new GridRenderer(source);
