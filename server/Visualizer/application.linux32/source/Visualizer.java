@@ -6,14 +6,31 @@ import oscP5.*;
 import netP5.*; 
 import ddf.minim.*; 
 
-import ddf.minim.spi.*; 
-import ddf.minim.signals.*; 
+import org.tritonus.share.midi.*; 
+import org.tritonus.sampled.file.*; 
+import javazoom.jl.player.advanced.*; 
+import org.tritonus.share.*; 
 import ddf.minim.*; 
-import ddf.mimin.javasound.*; 
 import ddf.minim.analysis.*; 
-import ddf.minim.effects.*; 
-import oscP5.*; 
 import netP5.*; 
+import org.tritonus.share.sampled.*; 
+import javazoom.jl.converter.*; 
+import javazoom.spi.mpeg.sampled.file.tag.*; 
+import org.tritonus.share.sampled.file.*; 
+import javazoom.spi.mpeg.sampled.convert.*; 
+import ddf.minim.javasound.*; 
+import oscP5.*; 
+import javazoom.spi.*; 
+import org.tritonus.share.sampled.mixer.*; 
+import javazoom.jl.decoder.*; 
+import processing.xml.*; 
+import processing.core.*; 
+import org.tritonus.share.sampled.convert.*; 
+import ddf.minim.spi.*; 
+import ddf.minim.effects.*; 
+import javazoom.spi.mpeg.sampled.file.*; 
+import ddf.minim.signals.*; 
+import javazoom.jl.player.*; 
 
 import java.applet.*; 
 import java.awt.Dimension; 
@@ -37,12 +54,13 @@ public class Visualizer extends PApplet {
 //  Music 250A, CCRMA, Stanford University
 //
 
+//import processing.core.PGraphics3D;
+//import processing.core.*;
+//import processing.opengl.*;
 
 
 
 
-// debug mode
-boolean DEBUG = true;
 
 int oscPort = 57121;
 
@@ -51,23 +69,18 @@ int oscPort = 57121;
 //float[][] attractors = new float[9][2];
 
 OscP5 oscP5;// = new OscP5(this, oscPort);
-Minim minim;
+Minim minim = new Minim(this);
 AudioSource source;
 GridRenderer gridRenderer;
 int select;
  
-/*
-boolean sketchFullScreen() {
-  return !DEBUG;
-}*/
-
 public void setup()
 {
   oscP5 = new OscP5(this, oscPort);
 
-  size(displayWidth, DEBUG ? 1080 : displayHeight, P3D);
+  size(1024, 708);
     
-  minim = new Minim(this);
+  //minim = new Minim(this);
   source = minim.getLineIn(); 
   
   gridRenderer = new GridRenderer(source);
