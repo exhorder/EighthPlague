@@ -24,11 +24,16 @@ AudioSource source;
 GridRenderer gridRenderer;
 int select;
  
+ 
+boolean sketchFullScreen() {
+  return false;
+}
+
 void setup()
 {
   oscP5 = new OscP5(this, oscPort);
 
-  size(1024, 708);
+  size(1920, 1080);
     
   //minim = new Minim(this);
   source = minim.getLineIn(); 

@@ -81,11 +81,13 @@ SynthDef(\spaceDrone,{
 // Receive notes from python swarm and make sound
 
 ~drums=true; // whether to use drums
-~fm=true;    // whether to use FM synth
+~fm=false;    // whether to use FM synth
 ~bubbles=true;
 ~spacedrone=true;
 
 ~scale = Scale.major;
+
+~processing = NetAddr("127.0.0.1", 57121);
 
 // musical parameter mapping
 ~minFreq = 10;  // in midi notes
@@ -216,6 +218,12 @@ OSCdef(\newJerkMsg,
        m = NetAddr("127.0.0.1", 9000); // python
        //set attractor position
        m.sendMsg("/resetboids");
+       
+       ~processing.sendMsg("/mode",[0,1].choose);
+       ~processing.sendMsg("/radius",[10,20,27].choose;);
+       ~processing.sendMsg("/rgb",78.rand+50,78.rand+50,78.rand+50);
+
+       //play jerk tone
        {
         1.do({
           play({
@@ -236,6 +244,104 @@ OSCdef(\newJerkMsg,
             2.wait;
         });
         }.fork;
+        
+        
+        
+       // choose synths to use        
+      ~drums=[true,false].choose; // whether to use drums
+      ~fm=[true,false].choose;    // whether to use FM synth
+      ~bubbles=[true,false].choose;
+      ~spacedrone=[true,false].choose;
+
+      ~scale = Scale.major;
+
+      ~processing = NetAddr("127.0.0.1", 57121);
+
+      ~processing.sendMsg("/mode",[0,1].choose);
+      ~processing.sendMsg("/rgb",78.rand+50,78.rand+50,78.rand+50);
+
+
+      // musical parameter mapping
+      ~minFreq = 10;  // in midi notes
+      ~maxFreq = 80; // in midi notes
+      ~minAmp = 0;
+      ~maxAmp = 0.5;
+      ~minDur = 0.1;
+      ~maxDur = 3.0;
+      ~minPan = 0.0;
+      ~maxPan = 2.0;
+      ~minSpeedLim = 300.0;
+      ~maxSpeedLim = 3000.0;
+      ~rangeFreq = ~maxFreq - ~minFreq;
+      ~rangeAmp = ~maxAmp - ~minAmp;
+      ~rangeDur = ~maxDur - ~minDur;
+      ~rangePan = ~maxPan - ~minPan;
+      ~rangeSpeedLim = ~maxSpeedLim - ~minSpeedLim;
+
+      n = NetAddr("127.0.0.1", 57120); // local machine
+      OSCdef.newMatching(\incoming, {|msg, time, addr, recvPort| \matching.postln}, '/swarmNote', n); // path matching
+      a = OSCdef(\incomingNotePrint,
+            {|msg, time, addr, recvPort|
+            time.postln;   // post time
+            msg.do({arg i; i.postln}); // post each part of the msg
+            ~freq = ((~rangeFreq * msg[1]) + ~minFreq).round;
+            ~amp = ((~rangeAmp * msg[2]) + ~minAmp);
+            ~dur = ((~rangeDur * msg[3]) + ~minDur);
+            ~pan = ((~rangePan * msg[4]) + ~minPan);
+            //~pan2 = ((~rangePan * msg[4]) + ~minPan);
+            ~degree = (~freq % 12) + (7 * ((~freq / 12).round - 6) );
+
+            if (~fm,
+                {Pbind(
+                  \instrument,  \simpFMAZ,
+                  \freq,        Pseq([~freq.midicps],1),
+                  \modfreq,     Pkey(\freq),
+                  \amp,         ~amp,
+                  \dur,         ~dur,
+                  \pos,         ~pan
+                ).play;}
+            );
+            
+            if (~bubbles,
+                {Pbind(
+                  \instrument,  \bubbles,
+                  \freq,        Pseq([~freq.midicps/50],1),
+                  \amp,         ~amp,
+                  \dur,         ~dur,
+                  \pos,         ~pan
+                ).play;}
+            );
+
+            if (~spacedrone,
+                {Pbind(
+                  \instrument,  \spaceDrone,
+                  \freq,        Pseq([~freq.midicps],1),
+                  \amp,         ~amp,
+                  \dur,         ~dur,
+                  \pos,         (~pan + 1.5) % 2.0
+                ).play;}
+            );
+
+            if (~drums,
+                {Pbind(
+                  \instrument,  \natalQuintoAz,
+                  //\freq,       Pseq([msg[1].midicps.round],1),
+                  #[\bufnum, \sampdur],
+                                Prand(Array.fill(~paths.size,{arg i; [~drumbufs[i],~drumbufs[i].duration]}),4.rand),
+                  \amp,         ~amp*4,
+                  \dur,         Prand([0.1,0.2,0.5,1], inf),
+                  \pos,         (~pan + 1.0) % 2.0
+                ).play;}
+            );
+
+
+            },
+            '/swarmNote',nil);
+
+
+        
+        
+        
       },
       '/jerk', nil);
 

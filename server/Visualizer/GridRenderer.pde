@@ -55,8 +55,8 @@ class GridRenderer extends FourierRenderer
 
   float diamondTileAlpha = 0;
 
-  float alpha = 1;
-  float _alpha = 1;
+  float alpha = 3;
+  float _alpha = 3;
   
   void draw() 
   {
