@@ -56,7 +56,7 @@ class GridRenderer extends FourierRenderer
 
 
   // intensity factor
-  float _intensity = 3;
+  float _intensity = 2;
   
   // "squeeze" 
   float squeeze = .7;
