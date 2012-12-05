@@ -17,8 +17,8 @@ class GridRenderer extends FourierRenderer
 
   
   // radius
-  int r = 20;
-
+  float r = 20;
+  float _r = 20;
 
   // color scale
   float colorScale = 40;
@@ -65,7 +65,7 @@ class GridRenderer extends FourierRenderer
   {
     if (left != null) {
       
-      val = new float[ceil(sqrt(2) * r)];   
+      val = new float[ceil(sqrt(2) * (int)_r)];   
       super.calc(val.length);
 
       // interpolate values
@@ -75,9 +75,12 @@ class GridRenderer extends FourierRenderer
 
       background(0);
 
-      float tileWidth = width / (2*r + 1);
-      float tileHeight = height / (2*r + 1);
+      float tileWidth = width / (2*_r + 1);
+      float tileHeight = height / (2*_r + 1);
 
+      _r = lerp(_r, r, .1);
+      //print(_r + "\n");
+      
       if (mode == 0) {
         factor = lerp(factor, 2, .2);
         diamondTileAlpha = lerp(diamondTileAlpha, 1, .02);
@@ -91,8 +94,8 @@ class GridRenderer extends FourierRenderer
       _rgb[1] = lerp(_rgb[1], rgb[1], .01);
       _rgb[2] = lerp(_rgb[2], rgb[2], .01);
       
-      for (int x = -r; x < r + 2; x++) { 
-        for (int z = -r; z < r + 2; z++) {   
+      for (int x = (int)-_r; x < _r + 2; x++) { 
+        for (int z = (int)-_r; z < _r + 2; z++) {   
           int index = (int)dist(x, z, 0, 0);
           if (index >= val.length)
             index = val.length - 1;
@@ -120,8 +123,7 @@ class GridRenderer extends FourierRenderer
           fill(c * _rgb[0], c * _rgb[1], c * _rgb[2]);
 
           for (int i = 0; i < 19; i++) {
-            
-            if ((int)((boids[i][0] -.5) * r * 2) == x && (int)((boids[i][1] - .5) * r * 2) == z) {
+            if ((x > -_r + 1 || z > -_r + 1) && (int)((boids[i][0] -.5) * _r * 2) == x && (int)((boids[i][1] - .5) * _r * 2) == z) {
               fill(pow(c * _rgb[0] * _intensity, 1.5), pow(c * _rgb[1] * _intensity, 1.5), pow(c * _rgb[2] * _intensity, 1.5));
             }
             
@@ -142,7 +144,7 @@ class GridRenderer extends FourierRenderer
                x1 - tileWidth / factor, y1, 
                x1, y0 + tileHeight / factor);          
 
-          if (factor > 1) {
+          if (factor > 1.7) {
             quad(x0 + tileWidth / factor + tileWidth / factor, y0 + tileHeight / factor, 
                  x0 + tileWidth / factor, y1 - tileHeight / factor + tileHeight / factor, 
                  x1 - tileWidth / factor + tileWidth / factor, y1 + tileHeight / factor, 

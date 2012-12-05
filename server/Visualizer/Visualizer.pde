@@ -29,8 +29,8 @@ void setup()
 
   size(1920, 1080);
     
-  Random random = new Random();
-    
+  random = new Random();
+   
   minim = new Minim(this);
   AudioSource source = minim.getLineIn(); 
   
@@ -47,13 +47,17 @@ void draw()
 
 void oscEvent(OscMessage msg) 
 {  
+  // debug
+  // print(msg);
+
   String pattern = msg.addrPattern();
     
   // handle OSC messages from SuperCollider
   if (pattern.equals("/jerk")) {
-    // random mode
-    gridRenderer.setMode(random.nextInt() % 2);
-    
+    // toggle mode
+    gridRenderer.setMode(gridRenderer.mode == 0 ? 1 : 0);
+    //gridRenderer.setMode(random.nextInt() % 2);
+        
     // semi-random color
     int colorMode = random.nextInt() % 7;
     if (colorMode == 0) {
@@ -73,8 +77,8 @@ void oscEvent(OscMessage msg)
     }
     
     // random radius
-    gridRenderer.r = (random.nextInt() % 10 + 10);
-  }
+    gridRenderer.r = (random.nextInt() % 5 + 20);
+}
   // handle OSC messages from swarm.py
   else if (pattern.equals("/boid")) {
     int i = int(msg.get(0).intValue());
@@ -105,9 +109,6 @@ void oscEvent(OscMessage msg)
   else if (pattern.equals("/mode")) {
     gridRenderer.setMode(msg.get(0).intValue());
   }*/
-  
-  // debug
-  //print(msg);
 }
 
 void stop()
