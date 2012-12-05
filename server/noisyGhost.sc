@@ -14,6 +14,7 @@
 
 o = s.options;
 o.memSize = 16384;
+~maxsynths=50;
 
 s.boot;
 s.meter;
@@ -139,6 +140,8 @@ a = OSCdef(\incomingNotePrint,
       //~pan2 = ((~rangePan * msg[4]) + ~minPan);
       ~degree = (~freq % 12) + (7 * ((~freq / 12).round - 6) );
 
+      if(s.numSynths<~maxsynths,
+      {
       if (~fm,
           {Pbind(
             \instrument,  \simpFMAZ,
@@ -208,7 +211,7 @@ a = OSCdef(\incomingNotePrint,
             \pos,         (~pan + 1.0) % 2.0
           ).play;}
       );
-
+      });
 
       },
       '/swarmNote',nil);
@@ -244,6 +247,8 @@ a = OSCdef(\incomingNotePrint,
             ~pan = ((~rangePan * msg[4]) + ~minPan);
             ~degree = (~freq % 12) + (7 * ((~freq / 12).round - 6) );
 
+            if(s.numSynths<~maxsynths,
+            {
             if (~fm,
                 {Pbind(
                   \instrument,  \simpFMAZ,
@@ -313,8 +318,8 @@ a = OSCdef(\incomingNotePrint,
                   \pos,         (~pan + 1.0) % 2.0
                 ).play;}
             );
+            });
 
-  
             },
             '/swarmNote',nil);
 1.yield;
@@ -342,6 +347,8 @@ a = OSCdef(\incomingNotePrint,
             ~pan = ((~rangePan * msg[4]) + ~minPan);
             ~degree = (~freq % 12) + (7 * ((~freq / 12).round - 6) );
 
+            if(s.numSynths<~maxsynths,
+            {
             if (~fm,
                 {Pbind(
                   \instrument,  \simpFMAZ,
@@ -411,7 +418,7 @@ a = OSCdef(\incomingNotePrint,
                   \pos,         (~pan + 1.0) % 2.0
                 ).play;}
             );
-
+            });
   
             },
             '/swarmNote',nil);
@@ -441,6 +448,9 @@ a = OSCdef(\incomingNotePrint,
             ~pan = ((~rangePan * msg[4]) + ~minPan);
             ~degree = (~freq % 12) + (7 * ((~freq / 12).round - 6) );
 
+
+            if(s.numSynths<~maxsynths,
+            {
             if (~fm,
                 {Pbind(
                   \instrument,  \simpFMAZ,
@@ -510,7 +520,7 @@ a = OSCdef(\incomingNotePrint,
                   \pos,         (~pan + 1.0) % 2.0
                 ).play;}
             );
-
+            });
   
             },
             '/swarmNote',nil);
@@ -539,6 +549,8 @@ a = OSCdef(\incomingNotePrint,
             ~pan = ((~rangePan * msg[4]) + ~minPan);
             ~degree = (~freq % 12) + (7 * ((~freq / 12).round - 6) );
 
+            if(s.numSynths<~maxsynths,
+            {
             if (~fm,
                 {Pbind(
                   \instrument,  \simpFMAZ,
@@ -608,7 +620,7 @@ a = OSCdef(\incomingNotePrint,
                   \pos,         (~pan + 1.0) % 2.0
                 ).play;}
             );
-
+            });
   
             },
             '/swarmNote',nil);
@@ -638,6 +650,8 @@ a = OSCdef(\incomingNotePrint,
             ~pan = ((~rangePan * msg[4]) + ~minPan);
             ~degree = (~freq % 12) + (7 * ((~freq / 12).round - 6) );
 
+            if(s.numSynths<~maxsynths,
+            {
             if (~fm,
                 {Pbind(
                   \instrument,  \simpFMAZ,
@@ -707,7 +721,7 @@ a = OSCdef(\incomingNotePrint,
                   \pos,         (~pan + 1.0) % 2.0
                 ).play;}
             );
-
+            });
   
             },
             '/swarmNote',nil);
@@ -736,6 +750,8 @@ a = OSCdef(\incomingNotePrint,
             ~pan = ((~rangePan * msg[4]) + ~minPan);
             ~degree = (~freq % 12) + (7 * ((~freq / 12).round - 6) );
 
+            if(s.numSynths<~maxsynths,
+            {
             if (~fm,
                 {Pbind(
                   \instrument,  \simpFMAZ,
@@ -805,7 +821,7 @@ a = OSCdef(\incomingNotePrint,
                   \pos,         (~pan + 1.0) % 2.0
                 ).play;}
             );
-
+            });
   
             },
             '/swarmNote',nil);
