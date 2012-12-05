@@ -48,7 +48,7 @@ void draw()
 void oscEvent(OscMessage msg) 
 {  
   // debug
-  // print(msg);
+  print(msg);
 
   String pattern = msg.addrPattern();
     
@@ -61,24 +61,36 @@ void oscEvent(OscMessage msg)
     // semi-random color
     int colorMode = random.nextInt() % 7;
     if (colorMode == 0) {
-      gridRenderer.setRGB(1, 1, 1);
+     gridRenderer.setRGB(1, 140./255, 0); // orange
     } else if (colorMode == 1) { 
-      gridRenderer.setRGB(1, 1, 0);
+      gridRenderer.setRGB(1, 1, 0); // brown
     } else if (colorMode == 2) {
-      gridRenderer.setRGB(1, 0, 1);
+      gridRenderer.setRGB(1, 0, 1); // purple
     } else if (colorMode == 3) {
-      gridRenderer.setRGB(0, 1, 1);
+      gridRenderer.setRGB(0, 1, 1); // yellow
     } else if (colorMode == 4) {
-      gridRenderer.setRGB(1, 0, 0);
+      gridRenderer.setRGB(1, 0, 0); // red
     } else if (colorMode == 5) {
-      gridRenderer.setRGB(0, 1, 0);
+      gridRenderer.setRGB(0, 1, 0); // green
     } else if (colorMode == 6) {
-      gridRenderer.setRGB(0, 0, 1);
+      gridRenderer.setRGB(0, 0, 1); // blue
     }
     
     // random radius
     gridRenderer.r = (random.nextInt() % 5 + 20);
-}
+  }
+  
+  else if (pattern.equals("/ioi")) {
+    print("ioi");
+  }
+  else if (pattern.equals("/on")) {
+    print("on");
+  }
+ 
+  else if (pattern.equals("/off")) {
+    print("off");
+  } 
+   
   // handle OSC messages from swarm.py
   else if (pattern.equals("/boid")) {
     int i = int(msg.get(0).intValue());

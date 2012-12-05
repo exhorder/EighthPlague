@@ -150,7 +150,7 @@ def makesound():
         note_time = random.randint(10,100) #time of first note, in sim_time units
     ioi = 0 #note ioi is the last dimension
     #check to see if it's time to output a note
-    if (note_time < sim_time):
+    if ((note_time < sim_time) & (MAXIOI<(500*0.95))):
         dimvals = [0.0]*NDIMS; #array for centroid values
         for i in range(NDIMS):
             dimvals[i] = 0
@@ -370,7 +370,7 @@ def ioi_handler(addr, tags, stuff, source):
     print "With addr : %s" % addr
     print "Typetags %s" % tags
     global MAXIOI
-    MAXIOI = int(stuff[0] * 400)
+    MAXIOI = int(stuff[0] * 500)
     print "---"
 s.addMsgHandler("/ioi", ioi_handler)
 

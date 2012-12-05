@@ -12,6 +12,9 @@
 //OSCFunc.trace(false); // Turn posting off
 //SwingOSC.quitAll
 
+o = s.options;
+o.memSize = 16384;
+
 s.boot;
 s.meter;
 
@@ -227,7 +230,7 @@ a = OSCdef(\incomingNotePrint,
       ~spacedrone=false;
       ~ocean=false;
       
-      ~scale = Scale.minor;
+      ~scale = Scale.minorPentatonic;
 
       n = NetAddr("127.0.0.1", 57120); // local machine
       OSCdef.newMatching(\incoming, {|msg, time, addr, recvPort| \matching.postln}, '/swarmNote', n);
@@ -325,7 +328,7 @@ a = OSCdef(\incomingNotePrint,
       ~spacedrone=false;
       ~ocean=false;
       
-      ~scale = Scale.minor;
+      ~scale = Scale.minorPentatonic;
 
       n = NetAddr("127.0.0.1", 57120); // local machine
       OSCdef.newMatching(\incoming, {|msg, time, addr, recvPort| \matching.postln}, '/swarmNote', n);
@@ -619,7 +622,8 @@ a = OSCdef(\incomingNotePrint,
       ~bubbles=false;
       ~spacedrone=true;
       ~ocean=false;
-      
+
+
       ~scale = Scale.minorPentatonic;
 
       n = NetAddr("127.0.0.1", 57120); // local machine
@@ -652,7 +656,7 @@ a = OSCdef(\incomingNotePrint,
                   \instrument,  \simpFMAZ,
                   //\freq,        Pseq([~freq.midicps],1),
                   \scale,       ~scale,
-                  \degree,      Pseq([~freq+[2,3,4].choose],1),
+                  \degree,      Pseq([~freq+[2,3,4].choose-12],1),
                   \modfreq,     Pkey(\freq),
                   \amp,         ~amp,
                   \dur,         ~dur,
@@ -899,9 +903,7 @@ OSCdef(\newPiezoMsg,
        msg.postln;
        m = NetAddr("127.0.0.1", 9000); // python
        //set attractor position
-       m.sendMsg("/speed",
-             (msg[1]).max(0.3).min(1)
-       );
+       m.sendMsg("/speed",(msg[1]).max(0.3).min(1));
       },
       '/piezo', nil);
       
@@ -912,9 +914,8 @@ OSCdef(\newIOIMsg,
        msg.postln;
        m = NetAddr("127.0.0.1", 9000); // python
        //set attractor position
-       m.sendMsg("/ioi",
-             (msg[1]).max(0.2).min(1)
-       );
+       m.sendMsg("/ioi",(msg[1]).max(0.2).min(1));
+       //~processing.sendMsg("/ioi",msg[1]);
       },
       '/ioi', nil);
 
