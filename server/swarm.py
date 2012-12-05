@@ -370,7 +370,7 @@ def ioi_handler(addr, tags, stuff, source):
     print "With addr : %s" % addr
     print "Typetags %s" % tags
     global MAXIOI
-    MAXIOI = int(stuff * 400)
+    MAXIOI = int(stuff[0] * 400)
     print "---"
 s.addMsgHandler("/ioi", ioi_handler)
 

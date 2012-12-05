@@ -95,12 +95,12 @@ SynthDef(\ocean,{
 //------------------------------------------------------
 // Receive notes from python swarm and make sound
 
-~drums=false; // whether to use drums
-~fm=true;    // whether to use FM synth
-~fmharm=true;
+~drums=true; // whether to use drums
+~fm=false;    // whether to use FM synth
+~fmharm=false;
 ~bubbles=false;
-~spacedrone=true;
-~ocean=false;
+~spacedrone=false;
+~ocean=true;
 
 ~scale = Scale.choose(7, 12);
 
@@ -211,99 +211,26 @@ a = OSCdef(\incomingNotePrint,
       '/swarmNote',nil);
 
 
-//---------------------------------------------------------
-// Receive messages from jar and send to swarm
-//---------------------------------------------------------
-// /piezo float
-// /accel float float float
-// /jerk 1
 
-OSCdef(\newAccelMsg,
-      {|msg, time, addr, recvPort|
-//       \Accel_Msg.postln;
-//       time.postln;
-//       msg.postln;
-      m = NetAddr("127.0.0.1", 9000); // python
-      //set attractor position
-      m.sendMsg("/attr_dim",
-            0.asInt, //freq dimension
-            (msg[1]).max(0).min(1)
-      );
-      m.sendMsg("/attr_dim",
-            1.asInt, //amp dimension
-            (msg[2]).max(0).min(1)
-      );
-      m.sendMsg("/attr_dim",
-            2.asInt, //dur dimension
-            (msg[3]).max(0).min(1)
-      );
-      m.sendMsg("/attr_dim",
-            3.asInt, //pan dimension
-            (msg[3]).max(0).min(1)
-      );
-      m.sendMsg("/attr_dim",
-            4.asInt, //modfreq dimension
-            (msg[2]).max(0).min(1)
-      );
-      m.sendMsg("/attr_dim",
-            5.asInt, //ioi dimension
-            (msg[3]*0.8).max(0).min(1)
-      );
-       
-      },
-      '/accel', nil);
-
-OSCdef(\newJerkMsg,
-      {|msg, time, addr, recvPort|
-       \Jerk_Msg.postln;
-       //time.postln;
-       //addr.postln;
-       //msg.postln;
-       m = NetAddr("127.0.0.1", 9000); // python
-       //set attractor position
-       m.sendMsg("/resetboids");
-       ~scale = Scale.choose(7, 12);
-       
-       //play jerk tone
-       {
-        1.do({
-          play({
-            var sig, chain;
-            sig = sum({ SinOsc.ar(rrand(50,6000),0,
-                        2*Decay.ar(Dust2.ar(5),0.1)).tanh } ! 7);
-            chain = sig;    // Start with the original signal
-            8.do {|i|
-                // A simple reverb
-                chain = LeakDC.ar(
-                  AllpassL.ar(LPF.ar(chain*0.9,3000),
-                  0.2, {0.19.rand+0.01}!2, 3)
-                  );
-            };
-            
-            PanAz.ar(4,Limiter.ar(sig+chain)*EnvGen.kr(Env.sine(4,0.1.rand), doneAction: 2),2.0.rand);
-          });
-            2.wait;
-        });
-        }.fork;
-        
-        
-        
-       // choose synths to use        
-      ~drums=[true,false].choose; // whether to use drums
-      ~fm=[true,false].choose;    // whether to use FM synth
-      ~fmharm=[true,false].choose;    // whether to use FM synth
-      ~bubbles=[true,false,false].choose;
-      ~spacedrone=[true,false].choose;
-      ~ocean=[true,false].choose;
+//---------------------------------------------------------
+// PERFORMANCE ROUTINE
+//---------------------------------------------------------
+//~performanceMode.reset
+~processing = NetAddr("127.0.0.1", 57121);
+~performanceMode = Routine.new({
+//second mode
+       // choose synths to use
+      ~drums=false;
+      ~fm=true;
+      ~fmharm=false;
+      ~bubbles=false;
+      ~spacedrone=false;
+      ~ocean=false;
       
-      ~scale = Scale.major;
-
-      ~processing = NetAddr("127.0.0.1", 57121);
-
-      ~processing.sendMsg("/jerk");
+      ~scale = Scale.minor;
 
       n = NetAddr("127.0.0.1", 57120); // local machine
-      OSCdef.newMatching(\incoming, {|msg, time, addr, recvPort| \matching.postln}, '/swarmNote', n); // path matching
+      OSCdef.newMatching(\incoming, {|msg, time, addr, recvPort| \matching.postln}, '/swarmNote', n);
       a = OSCdef(\incomingNotePrint,
             {|msg, time, addr, recvPort|
             time.postln;   // post time
@@ -312,7 +239,6 @@ OSCdef(\newJerkMsg,
             ~amp = ((~rangeAmp * msg[2]) + ~minAmp);
             ~dur = ((~rangeDur * msg[3]) + ~minDur);
             ~pan = ((~rangePan * msg[4]) + ~minPan);
-            //~pan2 = ((~rangePan * msg[4]) + ~minPan);
             ~degree = (~freq % 12) + (7 * ((~freq / 12).round - 6) );
 
             if (~fm,
@@ -388,11 +314,581 @@ OSCdef(\newJerkMsg,
   
             },
             '/swarmNote',nil);
+1.yield;
+
+//third mode
+       // choose synths to use
+      ~drums=false;
+      ~fm=true;
+      ~fmharm=true;
+      ~bubbles=false;
+      ~spacedrone=false;
+      ~ocean=false;
+      
+      ~scale = Scale.minor;
+
+      n = NetAddr("127.0.0.1", 57120); // local machine
+      OSCdef.newMatching(\incoming, {|msg, time, addr, recvPort| \matching.postln}, '/swarmNote', n);
+      a = OSCdef(\incomingNotePrint,
+            {|msg, time, addr, recvPort|
+            time.postln;   // post time
+            msg.do({arg i; i.postln}); // post each part of the msg
+            ~freq = ((~rangeFreq * msg[1]) + ~minFreq).round;
+            ~amp = ((~rangeAmp * msg[2]) + ~minAmp);
+            ~dur = ((~rangeDur * msg[3]) + ~minDur);
+            ~pan = ((~rangePan * msg[4]) + ~minPan);
+            ~degree = (~freq % 12) + (7 * ((~freq / 12).round - 6) );
+
+            if (~fm,
+                {Pbind(
+                  \instrument,  \simpFMAZ,
+                  //\freq,        Pseq([~freq.midicps],1),
+                  \scale,       ~scale,
+                  \degree,      Pseq([~freq],1),
+                  \modfreq,     Pkey(\freq),
+                  \amp,         ~amp,
+                  \dur,         ~dur,
+                  \pos,         ~pan
+                ).play;}
+            );
+            
+            if (~fmharm,
+                {Pbind(
+                  \instrument,  \simpFMAZ,
+                  //\freq,        Pseq([~freq.midicps],1),
+                  \scale,       ~scale,
+                  \degree,      Pseq([~freq+[2,3,4].choose],1),
+                  \modfreq,     Pkey(\freq),
+                  \amp,         ~amp,
+                  \dur,         ~dur,
+                  \pos,         (~pan + 0.5) % 2.0
+                ).play;}
+            );
+            
+            if (~bubbles,
+                {Pbind(
+                  \instrument,  \bubbles,
+                  \freq,        Pseq([~freq.midicps/50],1),
+                  \amp,         ~amp,
+                  \dur,         ~dur*[1,0.5,1.5].choose,
+                  \pos,         ~pan
+                ).play;}
+            );
+
+            if (~spacedrone,
+                {Pbind(
+                  \instrument,  \spaceDrone,
+                  //\freq,        Pseq([~freq.midicps],1),
+                  \scale,       ~scale,
+                  \degree,      Pseq([~freq+[2,3,4].choose],1),
+                  \amp,         ~amp,
+                  \dur,         ~dur,
+                  \pos,         (~pan + 1.5) % 2.0
+                ).play;}
+            );
+            
+            if (~ocean,
+                {Pbind(
+                  \instrument,  \ocean,
+                  \freq,        Pseq([~freq.midicps],1),
+                  \amp,         ~amp,
+                  \dur,         ~dur*[2,3].choose,
+                  \pos,         (~pan + 1.0) % 2.0
+                ).play;}
+            );
+            
+            if (~drums,
+                {Pbind(
+                  \instrument,  \natalQuintoAz,
+                  //\freq,       Pseq([msg[1].midicps.round],1),
+                  #[\bufnum, \sampdur],
+                                Prand(Array.fill(~paths.size,{arg i; [~drumbufs[i],~drumbufs[i].duration]}),4.rand),
+                  \amp,         ~amp*4,
+                  \dur,         Prand([0.1,0.2,0.5,1], inf),
+                  \pos,         (~pan + 1.0) % 2.0
+                ).play;}
+            );
+
+  
+            },
+            '/swarmNote',nil);
+1.yield;
 
 
+//fourth mode
+       // choose synths to use
+      ~drums=true;
+      ~fm=true;
+      ~fmharm=true;
+      ~bubbles=false;
+      ~spacedrone=false;
+      ~ocean=false;
+      
+      ~scale = Scale.dorian;
+
+      n = NetAddr("127.0.0.1", 57120); // local machine
+      OSCdef.newMatching(\incoming, {|msg, time, addr, recvPort| \matching.postln}, '/swarmNote', n);
+      a = OSCdef(\incomingNotePrint,
+            {|msg, time, addr, recvPort|
+            time.postln;   // post time
+            msg.do({arg i; i.postln}); // post each part of the msg
+            ~freq = ((~rangeFreq * msg[1]) + ~minFreq).round;
+            ~amp = ((~rangeAmp * msg[2]) + ~minAmp);
+            ~dur = ((~rangeDur * msg[3]) + ~minDur);
+            ~pan = ((~rangePan * msg[4]) + ~minPan);
+            ~degree = (~freq % 12) + (7 * ((~freq / 12).round - 6) );
+
+            if (~fm,
+                {Pbind(
+                  \instrument,  \simpFMAZ,
+                  //\freq,        Pseq([~freq.midicps],1),
+                  \scale,       ~scale,
+                  \degree,      Pseq([~freq],1),
+                  \modfreq,     Pkey(\freq),
+                  \amp,         ~amp,
+                  \dur,         ~dur,
+                  \pos,         ~pan
+                ).play;}
+            );
+            
+            if (~fmharm,
+                {Pbind(
+                  \instrument,  \simpFMAZ,
+                  //\freq,        Pseq([~freq.midicps],1),
+                  \scale,       ~scale,
+                  \degree,      Pseq([~freq+[2,3,4].choose],1),
+                  \modfreq,     Pkey(\freq),
+                  \amp,         ~amp,
+                  \dur,         ~dur,
+                  \pos,         (~pan + 0.5) % 2.0
+                ).play;}
+            );
+            
+            if (~bubbles,
+                {Pbind(
+                  \instrument,  \bubbles,
+                  \freq,        Pseq([~freq.midicps/50],1),
+                  \amp,         ~amp,
+                  \dur,         ~dur*[1,0.5,1.5].choose,
+                  \pos,         ~pan
+                ).play;}
+            );
+
+            if (~spacedrone,
+                {Pbind(
+                  \instrument,  \spaceDrone,
+                  //\freq,        Pseq([~freq.midicps],1),
+                  \scale,       ~scale,
+                  \degree,      Pseq([~freq+[2,3,4].choose],1),
+                  \amp,         ~amp,
+                  \dur,         ~dur,
+                  \pos,         (~pan + 1.5) % 2.0
+                ).play;}
+            );
+            
+            if (~ocean,
+                {Pbind(
+                  \instrument,  \ocean,
+                  \freq,        Pseq([~freq.midicps],1),
+                  \amp,         ~amp,
+                  \dur,         ~dur*[2,3].choose,
+                  \pos,         (~pan + 1.0) % 2.0
+                ).play;}
+            );
+            
+            if (~drums,
+                {Pbind(
+                  \instrument,  \natalQuintoAz,
+                  //\freq,       Pseq([msg[1].midicps.round],1),
+                  #[\bufnum, \sampdur],
+                                Prand(Array.fill(~paths.size,{arg i; [~drumbufs[i],~drumbufs[i].duration]}),4.rand),
+                  \amp,         ~amp*4,
+                  \dur,         Prand([0.1,0.2,0.5,1], inf),
+                  \pos,         (~pan + 1.0) % 2.0
+                ).play;}
+            );
+
+  
+            },
+            '/swarmNote',nil);
+1.yield;
+
+//fifth mode
+       // choose synths to use
+      ~drums=false;
+      ~fm=false;
+      ~fmharm=false;
+      ~bubbles=true;
+      ~spacedrone=false;
+      ~ocean=true;
+      
+      ~scale = Scale.choose(7, 12);
+
+      n = NetAddr("127.0.0.1", 57120); // local machine
+      OSCdef.newMatching(\incoming, {|msg, time, addr, recvPort| \matching.postln}, '/swarmNote', n);
+      a = OSCdef(\incomingNotePrint,
+            {|msg, time, addr, recvPort|
+            time.postln;   // post time
+            msg.do({arg i; i.postln}); // post each part of the msg
+            ~freq = ((~rangeFreq * msg[1]) + ~minFreq).round;
+            ~amp = ((~rangeAmp * msg[2]) + ~minAmp);
+            ~dur = ((~rangeDur * msg[3]) + ~minDur);
+            ~pan = ((~rangePan * msg[4]) + ~minPan);
+            ~degree = (~freq % 12) + (7 * ((~freq / 12).round - 6) );
+
+            if (~fm,
+                {Pbind(
+                  \instrument,  \simpFMAZ,
+                  //\freq,        Pseq([~freq.midicps],1),
+                  \scale,       ~scale,
+                  \degree,      Pseq([~freq],1),
+                  \modfreq,     Pkey(\freq),
+                  \amp,         ~amp,
+                  \dur,         ~dur,
+                  \pos,         ~pan
+                ).play;}
+            );
+            
+            if (~fmharm,
+                {Pbind(
+                  \instrument,  \simpFMAZ,
+                  //\freq,        Pseq([~freq.midicps],1),
+                  \scale,       ~scale,
+                  \degree,      Pseq([~freq+[2,3,4].choose],1),
+                  \modfreq,     Pkey(\freq),
+                  \amp,         ~amp,
+                  \dur,         ~dur,
+                  \pos,         (~pan + 0.5) % 2.0
+                ).play;}
+            );
+            
+            if (~bubbles,
+                {Pbind(
+                  \instrument,  \bubbles,
+                  \freq,        Pseq([~freq.midicps/50],1),
+                  \amp,         ~amp,
+                  \dur,         ~dur*[1,0.5,1.5].choose,
+                  \pos,         ~pan
+                ).play;}
+            );
+
+            if (~spacedrone,
+                {Pbind(
+                  \instrument,  \spaceDrone,
+                  //\freq,        Pseq([~freq.midicps],1),
+                  \scale,       ~scale,
+                  \degree,      Pseq([~freq+[2,3,4].choose],1),
+                  \amp,         ~amp,
+                  \dur,         ~dur,
+                  \pos,         (~pan + 1.5) % 2.0
+                ).play;}
+            );
+            
+            if (~ocean,
+                {Pbind(
+                  \instrument,  \ocean,
+                  \freq,        Pseq([~freq.midicps],1),
+                  \amp,         ~amp,
+                  \dur,         ~dur*[2,3].choose,
+                  \pos,         (~pan + 1.0) % 2.0
+                ).play;}
+            );
+            
+            if (~drums,
+                {Pbind(
+                  \instrument,  \natalQuintoAz,
+                  //\freq,       Pseq([msg[1].midicps.round],1),
+                  #[\bufnum, \sampdur],
+                                Prand(Array.fill(~paths.size,{arg i; [~drumbufs[i],~drumbufs[i].duration]}),4.rand),
+                  \amp,         ~amp*4,
+                  \dur,         Prand([0.1,0.2,0.5,1], inf),
+                  \pos,         (~pan + 1.0) % 2.0
+                ).play;}
+            );
+
+  
+            },
+            '/swarmNote',nil);
+1.yield;
+
+//sixth mode
+       // choose synths to use
+      ~drums=true;
+      ~fm=false;
+      ~fmharm=true;
+      ~bubbles=false;
+      ~spacedrone=true;
+      ~ocean=false;
+      
+      ~scale = Scale.minorPentatonic;
+
+      n = NetAddr("127.0.0.1", 57120); // local machine
+      OSCdef.newMatching(\incoming, {|msg, time, addr, recvPort| \matching.postln}, '/swarmNote', n);
+      a = OSCdef(\incomingNotePrint,
+            {|msg, time, addr, recvPort|
+            time.postln;   // post time
+            msg.do({arg i; i.postln}); // post each part of the msg
+            ~freq = ((~rangeFreq * msg[1]) + ~minFreq).round;
+            ~amp = ((~rangeAmp * msg[2]) + ~minAmp);
+            ~dur = ((~rangeDur * msg[3]) + ~minDur);
+            ~pan = ((~rangePan * msg[4]) + ~minPan);
+            ~degree = (~freq % 12) + (7 * ((~freq / 12).round - 6) );
+
+            if (~fm,
+                {Pbind(
+                  \instrument,  \simpFMAZ,
+                  //\freq,        Pseq([~freq.midicps],1),
+                  \scale,       ~scale,
+                  \degree,      Pseq([~freq],1),
+                  \modfreq,     Pkey(\freq),
+                  \amp,         ~amp,
+                  \dur,         ~dur,
+                  \pos,         ~pan
+                ).play;}
+            );
+            
+            if (~fmharm,
+                {Pbind(
+                  \instrument,  \simpFMAZ,
+                  //\freq,        Pseq([~freq.midicps],1),
+                  \scale,       ~scale,
+                  \degree,      Pseq([~freq+[2,3,4].choose],1),
+                  \modfreq,     Pkey(\freq),
+                  \amp,         ~amp,
+                  \dur,         ~dur,
+                  \pos,         (~pan + 0.5) % 2.0
+                ).play;}
+            );
+            
+            if (~bubbles,
+                {Pbind(
+                  \instrument,  \bubbles,
+                  \freq,        Pseq([~freq.midicps/50],1),
+                  \amp,         ~amp,
+                  \dur,         ~dur*[1,0.5,1.5].choose,
+                  \pos,         ~pan
+                ).play;}
+            );
+
+            if (~spacedrone,
+                {Pbind(
+                  \instrument,  \spaceDrone,
+                  //\freq,        Pseq([~freq.midicps],1),
+                  \scale,       ~scale,
+                  \degree,      Pseq([~freq+[2,3,4].choose],1),
+                  \amp,         ~amp,
+                  \dur,         ~dur,
+                  \pos,         (~pan + 1.5) % 2.0
+                ).play;}
+            );
+            
+            if (~ocean,
+                {Pbind(
+                  \instrument,  \ocean,
+                  \freq,        Pseq([~freq.midicps],1),
+                  \amp,         ~amp,
+                  \dur,         ~dur*[2,3].choose,
+                  \pos,         (~pan + 1.0) % 2.0
+                ).play;}
+            );
+            
+            if (~drums,
+                {Pbind(
+                  \instrument,  \natalQuintoAz,
+                  //\freq,       Pseq([msg[1].midicps.round],1),
+                  #[\bufnum, \sampdur],
+                                Prand(Array.fill(~paths.size,{arg i; [~drumbufs[i],~drumbufs[i].duration]}),4.rand),
+                  \amp,         ~amp*4,
+                  \dur,         Prand([0.1,0.2,0.5,1], inf),
+                  \pos,         (~pan + 1.0) % 2.0
+                ).play;}
+            );
+
+  
+            },
+            '/swarmNote',nil);
+1.yield;
+
+//seventh mode
+       // choose synths to use
+      ~drums=true;
+      ~fm=true;
+      ~fmharm=true;
+      ~bubbles=true;
+      ~spacedrone=false;
+      ~ocean=true;
+      
+      ~scale = Scale.minorPentatonic;
+
+      n = NetAddr("127.0.0.1", 57120); // local machine
+      OSCdef.newMatching(\incoming, {|msg, time, addr, recvPort| \matching.postln}, '/swarmNote', n);
+      a = OSCdef(\incomingNotePrint,
+            {|msg, time, addr, recvPort|
+            time.postln;   // post time
+            msg.do({arg i; i.postln}); // post each part of the msg
+            ~freq = ((~rangeFreq * msg[1]) + ~minFreq).round;
+            ~amp = ((~rangeAmp * msg[2]) + ~minAmp);
+            ~dur = ((~rangeDur * msg[3]) + ~minDur);
+            ~pan = ((~rangePan * msg[4]) + ~minPan);
+            ~degree = (~freq % 12) + (7 * ((~freq / 12).round - 6) );
+
+            if (~fm,
+                {Pbind(
+                  \instrument,  \simpFMAZ,
+                  //\freq,        Pseq([~freq.midicps],1),
+                  \scale,       ~scale,
+                  \degree,      Pseq([~freq],1),
+                  \modfreq,     Pkey(\freq),
+                  \amp,         ~amp,
+                  \dur,         ~dur,
+                  \pos,         ~pan
+                ).play;}
+            );
+            
+            if (~fmharm,
+                {Pbind(
+                  \instrument,  \simpFMAZ,
+                  //\freq,        Pseq([~freq.midicps],1),
+                  \scale,       ~scale,
+                  \degree,      Pseq([~freq+[2,3,4].choose],1),
+                  \modfreq,     Pkey(\freq),
+                  \amp,         ~amp,
+                  \dur,         ~dur,
+                  \pos,         (~pan + 0.5) % 2.0
+                ).play;}
+            );
+            
+            if (~bubbles,
+                {Pbind(
+                  \instrument,  \bubbles,
+                  \freq,        Pseq([~freq.midicps/50],1),
+                  \amp,         ~amp,
+                  \dur,         ~dur*[1,0.5,1.5].choose,
+                  \pos,         ~pan
+                ).play;}
+            );
+
+            if (~spacedrone,
+                {Pbind(
+                  \instrument,  \spaceDrone,
+                  //\freq,        Pseq([~freq.midicps],1),
+                  \scale,       ~scale,
+                  \degree,      Pseq([~freq+[2,3,4].choose],1),
+                  \amp,         ~amp,
+                  \dur,         ~dur,
+                  \pos,         (~pan + 1.5) % 2.0
+                ).play;}
+            );
+            
+            if (~ocean,
+                {Pbind(
+                  \instrument,  \ocean,
+                  \freq,        Pseq([~freq.midicps],1),
+                  \amp,         ~amp,
+                  \dur,         ~dur*[2,3].choose,
+                  \pos,         (~pan + 1.0) % 2.0
+                ).play;}
+            );
+            
+            if (~drums,
+                {Pbind(
+                  \instrument,  \natalQuintoAz,
+                  //\freq,       Pseq([msg[1].midicps.round],1),
+                  #[\bufnum, \sampdur],
+                                Prand(Array.fill(~paths.size,{arg i; [~drumbufs[i],~drumbufs[i].duration]}),4.rand),
+                  \amp,         ~amp*4,
+                  \dur,         Prand([0.1,0.2,0.5,1], inf),
+                  \pos,         (~pan + 1.0) % 2.0
+                ).play;}
+            );
+
+  
+            },
+            '/swarmNote',nil);
+1.yield;
+
+});
+
+
+//---------------------------------------------------------
+// Receive messages from jar and send to swarm
+//---------------------------------------------------------
+// /piezo float
+// /accel float float float
+// /jerk 1
+
+OSCdef(\newAccelMsg,
+      {|msg, time, addr, recvPort|
+//       \Accel_Msg.postln;
+//       time.postln;
+//       msg.postln;
+      m = NetAddr("127.0.0.1", 9000); // python
+      //set attractor position
+      m.sendMsg("/attr_dim",
+            0.asInt, //freq dimension
+            (msg[1]).max(0).min(1)
+      );
+      m.sendMsg("/attr_dim",
+            1.asInt, //amp dimension
+            (msg[2]).max(0).min(1)
+      );
+      m.sendMsg("/attr_dim",
+            2.asInt, //dur dimension
+            (msg[3]).max(0).min(1)
+      );
+      m.sendMsg("/attr_dim",
+            3.asInt, //pan dimension
+            (msg[3]).max(0).min(1)
+      );
+      m.sendMsg("/attr_dim",
+            4.asInt, //modfreq dimension
+            (msg[2]).max(0).min(1)
+      );
+      m.sendMsg("/attr_dim",
+            5.asInt, //ioi dimension
+            (msg[3]*0.8).max(0).min(1)
+      );
+       
+      },
+      '/accel', nil);
+
+OSCdef(\newJerkMsg,
+      {|msg, time, addr, recvPort|
+       \Jerk_Msg.postln;
+       //time.postln;
+       //addr.postln;
+       //msg.postln;
+       m = NetAddr("127.0.0.1", 9000); // python
+       //set attractor position
+       m.sendMsg("/resetboids");
+       
+       //play jerk tone
+       {
+        1.do({
+          play({
+            var sig, chain;
+            sig = sum({ SinOsc.ar(rrand(50,6000),0,
+                        2*Decay.ar(Dust2.ar(5),0.1)).tanh } ! 7);
+            chain = sig;    // Start with the original signal
+            8.do {|i|
+                // A simple reverb
+                chain = LeakDC.ar(
+                  AllpassL.ar(LPF.ar(chain*0.9,3000),
+                  0.2, {0.19.rand+0.01}!2, 3)
+                  );
+            };
+            
+            PanAz.ar(4,Limiter.ar(sig+chain)*EnvGen.kr(Env.sine(4,0.1.rand), doneAction: 2),2.0.rand);
+          });
+            2.wait;
+        });
+        }.fork;
         
-        
-        
+        ~processing = NetAddr("127.0.0.1", 57121);
+        ~processing.sendMsg("/jerk");
+        //Next performance mode.....
+        if (~performanceMode.next == nil, {~performanceMode.reset;});
+        ~performanceMode.next;
       },
       '/jerk', nil);
 
@@ -408,3 +904,19 @@ OSCdef(\newPiezoMsg,
        );
       },
       '/piezo', nil);
+      
+OSCdef(\newIOIMsg,
+      {|msg, time, addr, recvPort|
+       //\Piezo_Msg.postln;
+       //time.postln;
+       msg.postln;
+       m = NetAddr("127.0.0.1", 9000); // python
+       //set attractor position
+       m.sendMsg("/ioi",
+             (msg[1]).max(0.2).min(1)
+       );
+      },
+      '/ioi', nil);
+
+
+
