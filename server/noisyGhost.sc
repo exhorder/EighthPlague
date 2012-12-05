@@ -99,16 +99,16 @@ SynthDef(\ocean,{
 ~fm=true;    // whether to use FM synth
 ~fmharm=true;
 ~bubbles=false;
-~spacedrone=false;
+~spacedrone=true;
 ~ocean=false;
 
-~scale = Scale.major;
+~scale = Scale.choose(7, 12);
 
 ~processing = NetAddr("127.0.0.1", 57121);
 
 // musical parameter mapping
-~minFreq = 0;  // in midi notes
-~maxFreq = 12; // in midi notes
+~minFreq = -24;  // in midi notes
+~maxFreq = 18; // in midi notes
 ~minAmp = 0;
 ~maxAmp = 0.5;
 ~minDur = 0.09;
@@ -262,7 +262,7 @@ OSCdef(\newJerkMsg,
        m = NetAddr("127.0.0.1", 9000); // python
        //set attractor position
        m.sendMsg("/resetboids");
-       
+       ~scale = Scale.choose(7, 12);
        
        //play jerk tone
        {
