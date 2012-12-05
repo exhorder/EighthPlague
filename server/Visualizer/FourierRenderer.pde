@@ -1,5 +1,11 @@
+// 
+//  FourierRenderer.pde
+//  Ilias Karim
+//  Music 250A, CCRMA, Stanford University
+//
 
 // abstract class for FFT visualization
+// via http://www.openprocessing.org/sketch/5989
 abstract class FourierRenderer extends AudioRenderer {
   FFT fft;
   float maxFFT;

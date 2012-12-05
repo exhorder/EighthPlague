@@ -1,29 +1,22 @@
 //
-//  Visualizer
+//  Visualizer.pde
 //  Ilias Karim
 //  Music 250A, CCRMA, Stanford University
 //
-
-//import processing.core.PGraphics3D;
-//import processing.core.*;
-//import processing.opengl.*;
 
 import oscP5.*;
 import netP5.*;
 import ddf.minim.*;
 
-int oscPort = 57121;
+// incoming OSC port for swarm.py
+static final int oscPort = 57121;
+// NOTE: numbers of boids are hard-coded in GridRenderer :(
 
-// numbers of boids and attractors are hard-coded in GridRenderer :(
-//float[][] boids = new float[16][2]; // doubly hard-coded in GridRenderer
-//float[][] attractors = new float[9][2];
-
-OscP5 oscP5;// = new OscP5(this, oscPort);
-Minim minim = new Minim(this);
+OscP5 oscP5;
+Minim minim;
 AudioSource source;
 GridRenderer gridRenderer;
 int select;
- 
  
 boolean sketchFullScreen() {
   return false;
@@ -35,11 +28,11 @@ void setup()
 
   size(1920, 1080);
     
-  //minim = new Minim(this);
-  source = minim.getLineIn(); 
+  minim = new Minim(this);
+  AudioSource source = minim.getLineIn(); 
   
   gridRenderer = new GridRenderer(source);
- 
+  
   source.addListener(gridRenderer);
 }
  
@@ -52,10 +45,46 @@ void draw()
 void oscEvent(OscMessage msg) 
 {  
   String pattern = msg.addrPattern();
+
+  Random random = new Random();
+    
+    
+  //if (random.nextInt() % 2 == 0) {
+    
+  //}
   
-  //
-  // parse visualization control messages from PD
-  //
+  //gridRenderer.setRGB(random.nextFloat(), random.nextInt(), random.nextFloat());
+
+
+  // handle OSC messages from SuperCollider
+  if (pattern.equals("/jerk")) {
+    gridRenderer.setMode(random.nextInt() % 2);
+    
+    if (random.nextInt() % 5 == 0) {
+      gridRenderer.setRGB(1, 1, 1);
+      gridRenderer.setRGB(1, 1, 0);
+      gridRenderer.setRGB(1, 0, 1);
+      gridRenderer.setRGB(0, 1, 1);
+      gridRenderer.setRGB(1, 0, 0);
+      gridRenderer.setRGB(0, 1, 0);
+      gridRenderer.setRGB(0, 0, 1);
+    }
+    
+    // TODO: random color
+    // TODO: toggle mode
+    // TODO: cycle radius
+  }
+  // handle OSC messages from swarm.py
+  else if (pattern.equals("/boid")) {
+    int i = int(msg.get(0).intValue());
+    //print("\n" + i + "\n");
+    gridRenderer.boids[i][0] = msg.get(1).floatValue();
+    gridRenderer.boids[i][1] = msg.get(2).floatValue();
+    //gridRenderer.boids = boids;
+  }  
+  
+  /*
+  // handle OSC messages from PD
   if (pattern.equals("/radius")) {
     int val = msg.get(0).intValue();
     gridRenderer.r = val;
@@ -69,28 +98,11 @@ void oscEvent(OscMessage msg)
   }
   
   else if (pattern.equals("/intensity")) {
-    gridRenderer.alpha = msg.get(0).floatValue();
+    gridRenderer._alpha = msg.get(0).floatValue();
   }
   
   else if (pattern.equals("/mode")) {
     gridRenderer.setMode(msg.get(0).intValue());
-  }
-  
-  // 
-  // parse ... control messages from Python
-  //
-  else if (pattern.equals("/boid")) {
-    int i = int(msg.get(0).intValue());
-    print("\n" + i + "\n");
-    gridRenderer.boids[i][0] = msg.get(1).floatValue();
-    gridRenderer.boids[i][1] = msg.get(2).floatValue();
-    //gridRenderer.boids = boids;
-  }
-  
-  /*
-  else if (pattern.equals("/attractor")) {
-    attractors[msg.get(0).intValue()][0] = msg.get(1).floatValue();
-    attractors[msg.get(0).intValue()][1] = msg.get(1).floatValue();
   }*/
   
   // debug
