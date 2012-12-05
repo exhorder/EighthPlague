@@ -76,14 +76,28 @@ SynthDef(\spaceDrone,{
   Out.ar(out, PanAz.ar(4, EnvGen.kr(env, doneAction: 2) * Klang.ar(`[ freqs, amps, phases ],1,0), pos));
 }).add;
 
+SynthDef(\ocean,{
+  | out=0, amp=0.1, freq=200, pos=0.0, dur |
+  var sig, env, atk, dec, sus, rel;
+  atk = dur*0.4;
+  dec = dur*0.1;
+  sus = dur*0.02;
+  rel = dur*0.48;
+  sig = OnePole.ar(WhiteNoise.ar(0.1)+Dust.ar(freq, 0.5), 0.7);
+  sig = sig + Splay.ar(FreqShift.ar(sig, 1/(4..7)));
+  env = Env([0, 1, 0.6, 0.4, 0]*amp, [atk, dec, sus, rel], curve: \squared);
+  Out.ar(out, PanAz.ar(4, EnvGen.kr(env, doneAction: 2) * sig, pos));
+}).add;
+
 
 //------------------------------------------------------
 // Receive notes from python swarm and make sound
 
 ~drums=true; // whether to use drums
 ~fm=false;    // whether to use FM synth
-~bubbles=true;
-~spacedrone=true;
+~bubbles=false;
+~spacedrone=false;
+~ocean=true;
 
 ~scale = Scale.major;
 
@@ -136,7 +150,7 @@ a = OSCdef(\incomingNotePrint,
             \freq,        Pseq([~freq.midicps/50],1),
             \amp,         ~amp,
             \dur,         ~dur,
-            \pos,         ~pan
+            \pos,         (~pan + 0.5) % 2.0
           ).play;}
       );
 
@@ -150,14 +164,24 @@ a = OSCdef(\incomingNotePrint,
           ).play;}
       );
 
+      if (~ocean,
+          {Pbind(
+            \instrument,  \ocean,
+            \freq,        Pseq([~freq.midicps],1),
+            \amp,         ~amp,
+            \dur,         ~dur*[2,3].choose,
+            \pos,         (~pan + 1.0) % 2.0
+          ).play;}
+      );
+
       if (~drums,
           {Pbind(
             \instrument,  \natalQuintoAz,
             //\freq,       Pseq([msg[1].midicps.round],1),
             #[\bufnum, \sampdur],
-                          Prand(Array.fill(~paths.size,{arg i; [~drumbufs[i],~drumbufs[i].duration]}),4.rand),
+                          Prand(Array.fill(~paths.size,{arg i; [~drumbufs[i],~drumbufs[i].duration]}),6.rand),
             \amp,         ~amp*4,
-            \dur,         Prand([0.1,0.2,0.5,1], inf),
+            \dur,         Prand([0.1,0.1,0.2,0.5,1], inf),
             \pos,         (~pan + 1.0) % 2.0
           ).play;}
       );
@@ -250,15 +274,16 @@ OSCdef(\newJerkMsg,
        // choose synths to use        
       ~drums=[true,false].choose; // whether to use drums
       ~fm=[true,false].choose;    // whether to use FM synth
-      ~bubbles=[true,false].choose;
+      ~bubbles=[true,false,false].choose;
       ~spacedrone=[true,false].choose;
-
+      ~ocean=[true,false].choose;
+      
       ~scale = Scale.major;
 
       ~processing = NetAddr("127.0.0.1", 57121);
 
       ~processing.sendMsg("/mode",[0,1].choose);
-      ~processing.sendMsg("/rgb",78.rand+50,78.rand+50,78.rand+50);
+      ~processing.sendMsg("/jerk");
 
 
       // musical parameter mapping
@@ -321,7 +346,17 @@ OSCdef(\newJerkMsg,
                   \pos,         (~pan + 1.5) % 2.0
                 ).play;}
             );
-
+            
+            if (~ocean,
+                {Pbind(
+                  \instrument,  \ocean,
+                  \freq,        Pseq([~freq.midicps],1),
+                  \amp,         ~amp,
+                  \dur,         ~dur*[2,3].choose,
+                  \pos,         (~pan + 1.0) % 2.0
+                ).play;}
+            );
+            
             if (~drums,
                 {Pbind(
                   \instrument,  \natalQuintoAz,
