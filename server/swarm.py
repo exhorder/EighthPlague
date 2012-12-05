@@ -364,6 +364,15 @@ def reset_boids_handler(addr, tags, stuff, source):
     print "---"
 s.addMsgHandler("/resetboids", reset_boids_handler)
 
+def ioi_handler(addr, tags, stuff, source):
+    print "---"
+    print "Received new osc msg from %s" % OSC.getUrlStr(source)
+    print "With addr : %s" % addr
+    print "Typetags %s" % tags
+    global MAXIOI
+    MAXIOI = int(stuff * 400)
+    print "---"
+s.addMsgHandler("/ioi", ioi_handler)
 
 #change speed limit
 def speed_lim_handler(addr, tags, stuff, source):
