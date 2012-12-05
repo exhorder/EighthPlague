@@ -90,26 +90,29 @@ SynthDef(\ocean,{
 }).add;
 
 
+
+
 //------------------------------------------------------
 // Receive notes from python swarm and make sound
 
-~drums=true; // whether to use drums
-~fm=false;    // whether to use FM synth
+~drums=false; // whether to use drums
+~fm=true;    // whether to use FM synth
+~fmharm=true;
 ~bubbles=false;
 ~spacedrone=false;
-~ocean=true;
+~ocean=false;
 
 ~scale = Scale.major;
 
 ~processing = NetAddr("127.0.0.1", 57121);
 
 // musical parameter mapping
-~minFreq = 10;  // in midi notes
-~maxFreq = 80; // in midi notes
+~minFreq = 0;  // in midi notes
+~maxFreq = 12; // in midi notes
 ~minAmp = 0;
 ~maxAmp = 0.5;
-~minDur = 0.1;
-~maxDur = 3.0;
+~minDur = 0.09;
+~maxDur = 3.5;
 ~minPan = 0.0;
 ~maxPan = 2.0;
 ~minSpeedLim = 300.0;
@@ -136,11 +139,26 @@ a = OSCdef(\incomingNotePrint,
       if (~fm,
           {Pbind(
             \instrument,  \simpFMAZ,
-            \freq,        Pseq([~freq.midicps],1),
+            //\freq,        Pseq([~freq.midicps],1),
+            \scale,       ~scale,
+            \degree,      Pseq([~freq],1),
             \modfreq,     Pkey(\freq),
             \amp,         ~amp,
             \dur,         ~dur,
             \pos,         ~pan
+          ).play;}
+      );
+      
+      if (~fmharm,
+          {Pbind(
+            \instrument,  \simpFMAZ,
+            //\freq,        Pseq([~freq.midicps],1),
+            \scale,       ~scale,
+            \degree,      Pseq([~freq+[2,3,4].choose],1),
+            \modfreq,     Pkey(\freq),
+            \amp,         ~amp,
+            \dur,         ~dur,
+            \pos,         (~pan + 0.5) % 2.0
           ).play;}
       );
       
@@ -149,7 +167,7 @@ a = OSCdef(\incomingNotePrint,
             \instrument,  \bubbles,
             \freq,        Pseq([~freq.midicps/50],1),
             \amp,         ~amp,
-            \dur,         ~dur,
+            \dur,         ~dur*[1,0.5,1.5].choose,
             \pos,         (~pan + 0.5) % 2.0
           ).play;}
       );
@@ -157,7 +175,9 @@ a = OSCdef(\incomingNotePrint,
       if (~spacedrone,
           {Pbind(
             \instrument,  \spaceDrone,
-            \freq,        Pseq([~freq.midicps],1),
+            //\freq,        Pseq([~freq.midicps],1),
+            \scale,       ~scale,
+            \degree,      Pseq([~freq+[2,3,4].choose],1),
             \amp,         ~amp,
             \dur,         ~dur,
             \pos,         (~pan + 1.5) % 2.0
@@ -243,10 +263,7 @@ OSCdef(\newJerkMsg,
        //set attractor position
        m.sendMsg("/resetboids");
        
-       ~processing.sendMsg("/mode",[0,1].choose);
-       ~processing.sendMsg("/radius",[10,20,27].choose;);
-       ~processing.sendMsg("/rgb",78.rand+50,78.rand+50,78.rand+50);
-
+       
        //play jerk tone
        {
         1.do({
@@ -274,6 +291,7 @@ OSCdef(\newJerkMsg,
        // choose synths to use        
       ~drums=[true,false].choose; // whether to use drums
       ~fm=[true,false].choose;    // whether to use FM synth
+      ~fmharm=[true,false].choose;    // whether to use FM synth
       ~bubbles=[true,false,false].choose;
       ~spacedrone=[true,false].choose;
       ~ocean=[true,false].choose;
@@ -282,26 +300,7 @@ OSCdef(\newJerkMsg,
 
       ~processing = NetAddr("127.0.0.1", 57121);
 
-      ~processing.sendMsg("/mode",[0,1].choose);
       ~processing.sendMsg("/jerk");
-
-
-      // musical parameter mapping
-      ~minFreq = 10;  // in midi notes
-      ~maxFreq = 80; // in midi notes
-      ~minAmp = 0;
-      ~maxAmp = 0.5;
-      ~minDur = 0.1;
-      ~maxDur = 3.0;
-      ~minPan = 0.0;
-      ~maxPan = 2.0;
-      ~minSpeedLim = 300.0;
-      ~maxSpeedLim = 3000.0;
-      ~rangeFreq = ~maxFreq - ~minFreq;
-      ~rangeAmp = ~maxAmp - ~minAmp;
-      ~rangeDur = ~maxDur - ~minDur;
-      ~rangePan = ~maxPan - ~minPan;
-      ~rangeSpeedLim = ~maxSpeedLim - ~minSpeedLim;
 
       n = NetAddr("127.0.0.1", 57120); // local machine
       OSCdef.newMatching(\incoming, {|msg, time, addr, recvPort| \matching.postln}, '/swarmNote', n); // path matching
@@ -319,11 +318,26 @@ OSCdef(\newJerkMsg,
             if (~fm,
                 {Pbind(
                   \instrument,  \simpFMAZ,
-                  \freq,        Pseq([~freq.midicps],1),
+                  //\freq,        Pseq([~freq.midicps],1),
+                  \scale,       ~scale,
+                  \degree,      Pseq([~freq],1),
                   \modfreq,     Pkey(\freq),
                   \amp,         ~amp,
                   \dur,         ~dur,
                   \pos,         ~pan
+                ).play;}
+            );
+            
+            if (~fmharm,
+                {Pbind(
+                  \instrument,  \simpFMAZ,
+                  //\freq,        Pseq([~freq.midicps],1),
+                  \scale,       ~scale,
+                  \degree,      Pseq([~freq+[2,3,4].choose],1),
+                  \modfreq,     Pkey(\freq),
+                  \amp,         ~amp,
+                  \dur,         ~dur,
+                  \pos,         (~pan + 0.5) % 2.0
                 ).play;}
             );
             
@@ -332,7 +346,7 @@ OSCdef(\newJerkMsg,
                   \instrument,  \bubbles,
                   \freq,        Pseq([~freq.midicps/50],1),
                   \amp,         ~amp,
-                  \dur,         ~dur,
+                  \dur,         ~dur*[1,0.5,1.5].choose,
                   \pos,         ~pan
                 ).play;}
             );
@@ -340,7 +354,9 @@ OSCdef(\newJerkMsg,
             if (~spacedrone,
                 {Pbind(
                   \instrument,  \spaceDrone,
-                  \freq,        Pseq([~freq.midicps],1),
+                  //\freq,        Pseq([~freq.midicps],1),
+                  \scale,       ~scale,
+                  \degree,      Pseq([~freq+[2,3,4].choose],1),
                   \amp,         ~amp,
                   \dur,         ~dur,
                   \pos,         (~pan + 1.5) % 2.0
@@ -369,7 +385,7 @@ OSCdef(\newJerkMsg,
                 ).play;}
             );
 
-
+  
             },
             '/swarmNote',nil);
 
