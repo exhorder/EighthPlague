@@ -137,24 +137,23 @@ class GridRenderer extends FourierRenderer
 
            c = 256 * val[(int)avg] * diamondTileAlpha; 
            
-           float bonus = 1;
+           //float bonus = 1;
            
            /*
            if (random(0, 100) > 99)
              bonus = random(1, 2);
            */
            
-           fill(c * _rgb[0] * _alpha * bonus, c * _rgb[1] * _alpha * bonus, c * _rgb[2] * _alpha * bonus);
+           fill(c * _rgb[0] * _alpha, c * _rgb[1] * _alpha, c * _rgb[2] * _alpha);
          
            //fill(1, 1, 1, 0);
          
            for (int i = 0; i < 19; i++) {
 
              if ((int)((boids[i][0] -.5) * r * 2) == x && (int)((boids[i][1] - .5) * r * 2) == z) {
-               //print ((boids[i][0] * width) + " " + (boids[i][1] * height) + "\n");
               
-               fill(256, 256, 256, 256);
-               //print("EUREKA");
+               fill((c * _rgb[0] * _alpha)^2, (c * _rgb[1] * _alpha)^2, (c * _rgb[2] * _alpha)^2);
+               //fill(256, 256, 256, 256);
              }
            }
 
