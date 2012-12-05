@@ -14,6 +14,7 @@ static final int oscPort = 57121;
 
 OscP5 oscP5;
 Minim minim;
+Random random;
 AudioSource source;
 GridRenderer gridRenderer;
 int select;
@@ -27,6 +28,8 @@ void setup()
   oscP5 = new OscP5(this, oscPort);
 
   size(1920, 1080);
+    
+  Random random = new Random();
     
   minim = new Minim(this);
   AudioSource source = minim.getLineIn(); 
@@ -45,34 +48,32 @@ void draw()
 void oscEvent(OscMessage msg) 
 {  
   String pattern = msg.addrPattern();
-
-  Random random = new Random();
     
-    
-  //if (random.nextInt() % 2 == 0) {
-    
-  //}
-  
-  //gridRenderer.setRGB(random.nextFloat(), random.nextInt(), random.nextFloat());
-
-
   // handle OSC messages from SuperCollider
   if (pattern.equals("/jerk")) {
+    // random mode
     gridRenderer.setMode(random.nextInt() % 2);
     
-    if (random.nextInt() % 5 == 0) {
+    // semi-random color
+    int colorMode = random.nextInt() % 7;
+    if (colorMode == 0) {
       gridRenderer.setRGB(1, 1, 1);
+    } else if (colorMode == 1) { 
       gridRenderer.setRGB(1, 1, 0);
+    } else if (colorMode == 2) {
       gridRenderer.setRGB(1, 0, 1);
+    } else if (colorMode == 3) {
       gridRenderer.setRGB(0, 1, 1);
+    } else if (colorMode == 4) {
       gridRenderer.setRGB(1, 0, 0);
+    } else if (colorMode == 5) {
       gridRenderer.setRGB(0, 1, 0);
+    } else if (colorMode == 6) {
       gridRenderer.setRGB(0, 0, 1);
     }
     
-    // TODO: random color
-    // TODO: toggle mode
-    // TODO: cycle radius
+    // random radius
+    gridRenderer.r = (random.nextInt() % 10 + 10);
   }
   // handle OSC messages from swarm.py
   else if (pattern.equals("/boid")) {
